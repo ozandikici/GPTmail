@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>GPTmail · IMAP/SMTP MCP Workspace</title>
+  <meta name="description" content="Open-source secure IMAP, SMTP and ChatGPT MCP bridge.">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <section id="loginView" class="login-stage">
+    <div class="login-card">
+      <div class="identity"><div class="mark">G<span>.</span></div><div><b>GPTmail</b><small>Open-source AI Mail Gateway</small></div></div>
+      <div class="eyebrow">PRIVATE WORKSPACE</div>
+      <h1>E-postanın kontrolü sende.</h1>
+      <p>IMAP / SMTP hesaplarını tek bir yerde yönet; ChatGPT'nin hangi işlemleri yapabileceğine sen karar ver.</p>
+      <form id="loginForm">
+        <label for="adminPassword">Yönetici şifresi</label>
+        <input id="adminPassword" name="password" type="password" required autocomplete="current-password" placeholder="••••••••••••">
+        <button class="primary wide" type="submit">Yönetim paneline gir <span>→</span></button>
+      </form>
+      <div class="footnote"><span class="status-dot"></span> Şifreler yalnızca senin sunucunda şifrelenerek saklanır.</div>
+    </div>
+    <div class="login-aside"><div class="mesh"></div><div class="aside-content"><span class="pill">IMAP · SMTP · MCP</span><h2>Every inbox.<br>One intelligent<br><em>connection.</em></h2><p>Permissions first. Automation on your terms.</p><div class="aside-stat"><span>15</span> MCP araç desteği <span>·</span> OAuth 2.1 + PKCE</div></div></div>
+  </section>
+
+  <div id="workspace" class="workspace hidden">
+    <aside class="sidebar">
+      <div class="identity sidebar-brand"><div class="mark">G<span>.</span></div><div><b>GPTmail</b><small>MAIL / INTELLIGENCE</small></div></div>
+      <div class="nav-caption">WORKSPACE</div>
+      <nav id="nav">
+        <button type="button" data-page="inbox" class="nav-item active"><span class="nav-icon">▣</span> Posta kutusu</button>
+        <button type="button" data-page="accounts" class="nav-item"><span class="nav-icon">◎</span> Hesaplar</button>
+        <button type="button" data-page="permissions" class="nav-item"><span class="nav-icon">◇</span> MCP yetkileri</button>
+        <button type="button" data-page="approvals" class="nav-item"><span class="nav-icon">✓</span> Onay bekleyenler <span id="pendingCount" class="mini-count hidden">0</span></button>
+        <button type="button" data-page="connection" class="nav-item"><span class="nav-icon">⟷</span> ChatGPT bağlantısı</button>
+        <button type="button" data-page="activity" class="nav-item"><span class="nav-icon">◷</span> İşlem geçmişi</button>
+      </nav>
+      <div class="sidebar-end"><div class="sidebar-note"><span class="status-dot"></span><span>Self-hosted / Private data</span></div><button id="logoutBtn" class="quiet" type="button">Oturumu kapat ↗</button></div>
+    </aside>
+    <main class="main"><header class="topbar"><div><span class="eyebrow">YOUR MAIL. YOUR RULES.</span><h1 id="pageTitle">Posta kutusu</h1></div><div class="topbar-right"><div class="endpoint-chip"><span class="status-dot"></span><span>MCP READY</span></div><div class="avatar">G</div></div></header>
+      <div class="content">
+        <section id="page-inbox" class="page">
+          <div class="section-header"><div><h2>Mesajlar</h2><p>Okuma işlemi mesajları otomatik olarak okundu işaretlemez.</p></div><button id="composeToggle" class="primary" type="button">+ Yeni e-posta</button></div>
+          <div class="panel inbox-controls"><select id="inboxAccount" aria-label="Posta hesabı"><option value="">Hesap seç</option></select><select id="inboxFolder" aria-label="Klasör"><option>INBOX</option></select><input id="searchQuery" placeholder="Mail içeriğinde ara..." aria-label="Mesaj ara"><button id="searchBtn" class="secondary">Ara</button><button id="refreshInbox" class="secondary">Yenile</button></div>
+          <div id="composePanel" class="panel form-panel hidden"><div class="form-heading"><h3>Yeni e-posta</h3><button id="closeCompose" class="quiet">Kapat ×</button></div><form id="composeForm"><label>Alıcı (virgülle ayırabilirsin)<input name="to" type="text" required placeholder="example@company.com"></label><label>Konu<input name="subject" maxlength="500" required></label><label>Mesaj<textarea name="body" rows="7" required></textarea></label><button class="primary" type="submit">SMTP ile gönder</button></form></div>
+          <div class="inbox-grid"><div class="panel message-list"><div id="messagesList" class="empty">Hesap seçerek mesajlarını listeleyebilirsin.</div></div><div class="panel message-detail"><div id="messageDetail" class="empty">Bir mesaj seçtiğinde burada görüntülenecek.</div></div></div>
+        </section>
+
+        <section id="page-accounts" class="page hidden"><div class="section-header"><div><h2>E-posta hesapları</h2><p>IMAPS ve şifreli SMTP ile birden fazla posta kutusu bağlayabilirsin.</p></div><span class="tag">IMAP / SMTP TLS</span></div>
+          <div class="two-col"><div class="panel form-panel"><h3>Yeni hesap ekle</h3><p class="muted">Önce bağlantıyı doğrular, sonra kimlik bilgilerini şifreleyerek kaydederiz.</p>
+            <form id="accountForm" class="account-form"><input type="hidden" name="account_id" value="">
+              <label>Hesap adı<input name="name" required placeholder="İş e-postası"></label><label>E-posta adresi<input name="email" type="email" required placeholder="you@domain.com"></label>
+              <div class="form-heading slim"><h4>IMAP — Gelen posta</h4><span>SSL / TLS</span></div>
+              <label>Sunucu<input name="imap_host" required placeholder="imap.domain.com"></label><label>Port<input name="imap_port" type="number" value="993" min="1" max="65535" required></label>
+              <label>Kullanıcı adı<input name="username" required placeholder="you@domain.com"></label><label>IMAP şifresi / uygulama şifresi<input name="password" type="password" autocomplete="new-password" required placeholder="Düzenlemede boş bırakırsan değişmez"></label>
+              <div class="form-heading slim"><h4>SMTP — Giden posta (isteğe bağlı)</h4><span>465 SSL / 587 STARTTLS</span></div>
+              <label>SMTP sunucusu<input name="smtp_host" placeholder="smtp.domain.com"></label><label>Port<input name="smtp_port" type="number" value="465" min="1" max="65535"></label>
+              <label>SMTP kullanıcı adı<input name="smtp_username" placeholder="Boşsa IMAP kullanıcısı"></label><label>SMTP şifresi<input name="smtp_password" type="password" autocomplete="new-password" placeholder="Boşsa IMAP şifresi"></label>
+              <button class="primary wide" type="submit">Bağlantıyı doğrula ve kaydet</button><button id="cancelAccountEdit" class="secondary wide hidden" type="button">Düzenlemeyi iptal et</button>
+            </form>
+          </div><div><div class="panel form-panel"><h3>Bağlı hesaplar</h3><div id="accountList" class="account-list empty">Henüz hesap eklenmedi.</div></div><div class="info-block"><b>İki faktörlü doğrulama</b><p>Gmail, Outlook veya Titan gibi sağlayıcılarda, gerekiyorsa uygulama şifresi kullan. Hesabının ana şifresini paylaşman gerekmez.</p></div></div></div>
+        </section>
+
+        <section id="page-permissions" class="page hidden"><div class="section-header"><div><h2>ChatGPT ne yapabilsin?</h2><p>Her MCP yetkisini ayrı ayrı açıp kapat. Değişiklikler sunucuda hemen uygulanır.</p></div><span class="tag amber">Varsayılan: salt okunur</span></div>
+          <div class="panel form-panel"><div class="presets"><button id="presetRead" class="secondary">Salt okunur</button><button id="presetAll" class="secondary">Tüm araçları aç</button><span>Onay seçenekleri ayrı kontrol edilir.</span></div><div id="permissionList" class="permissions-list"></div><div class="permission-footer"><p>Gönderme onayı kapatılırsa ChatGPT, etkin yetkilerle e-postayı doğrudan gönderebilir.</p><button id="savePermissions" class="primary">Yetkileri kaydet</button></div></div>
+        </section>
+
+        <section id="page-approvals" class="page hidden"><div class="section-header"><div><h2>Bekleyen işlemler</h2><p>Mail gönderme ve silme taleplerini burada inceleyerek onaylayabilirsin.</p></div><button id="refreshApprovals" class="secondary">Yenile</button></div><div id="approvalList" class="approval-list"></div><div class="info-block">Onay bekleyen talepler 7 gün sonra otomatik sona erer. Reddettiğin işlem gerçekleştirilmez.</div></section>
+
+        <section id="page-connection" class="page hidden"><div class="section-header"><div><h2>ChatGPT MCP bağlantısı</h2><p>OAuth ile bağlan; IMAP/SMTP şifreleri ChatGPT'ye aktarılmaz.</p></div><span class="tag">OAuth 2.1 + PKCE</span></div>
+          <div class="panel form-panel"><h3>Uzak MCP sunucu adresi</h3><div class="copyline"><code id="mcpUrl">Bağlantı hazırlanıyor...</code><button id="copyUrl" class="secondary">Kopyala</button></div><div class="steps"><div><span>01</span><p>ChatGPT'de <b>Ayarlar → Plugins</b> bölümünden yeni bir özel MCP bağlantısı ekle.</p></div><div><span>02</span><p>Yukarıdaki HTTPS adresini sunucu URL'si olarak gir ve OAuth bağlantısını başlat.</p></div><div><span>03</span><p>Açılan GPTmail yetkilendirme sayfasında yönetici şifrenle onayla.</p></div><div><span>04</span><p>ChatGPT'ye “GPTmail'deki son 10 e-postamı özetle” diye sor.</p></div></div><button id="revokeConnections" class="danger-outline">Tüm MCP bağlantılarını geçersiz kıl</button></div>
+          <div class="info-block"><b>Önemli</b><p>Bu adres çalışır bir Vercel dağıtımına ait olmalıdır. Geliştirme ortamının localhost adresi ChatGPT'nin bulut sunucularından erişilebilir değildir. ChatGPT tarafında özel eklenti ekleme desteği hesap/çalışma alanına göre değişebilir.</p></div>
+        </section>
+
+        <section id="page-activity" class="page hidden"><div class="section-header"><div><h2>İşlem geçmişi</h2><p>İşlem türleri kaydedilir, e-posta gövdeleri veya parolalar kaydedilmez.</p></div><span class="tag">Son 80 kayıt</span></div><div id="auditList" class="panel audit-list"></div></section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

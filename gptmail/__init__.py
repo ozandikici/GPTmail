@@ -1,0 +1,1 @@
+"""GPTmail application package."""
