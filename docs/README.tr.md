@@ -46,6 +46,8 @@ Google için ayrıca `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`; Microsoft için
 - Tek bir güvenilir sahibi olan kişisel kurulum hedeflenir. Bağımsız güvenlik denetimi yapılmamıştır; çok kiracılı bir posta hizmeti değildir.
 - Gerçek ChatGPT OAuth bağlantısı dağıtımda doğrulanmıştır. Google/Microsoft veya genel IMAP/SMTP posta kutularıyla uçtan uca canlı test henüz yapılmamıştır.
 
-Bakımcının `gptmail.vercel.app` kurulumu parola korumalı özel çalışma alanıdır; açık demo veya ortak posta hizmeti değildir. Projeyi denemek için kaynak depodan kendi kurulumunu yap.
+Bu proje kendi ortamına kurman içindir; ortak bir posta hizmeti veya herkese açık demo sunmaz. Projeyi denemek için kaynak depodan kendi kurulumunu yap.
 
 Geliştirme ve tüm API ayrıntıları için [İngilizce README](../README.md) dosyasına bakabilirsin.
+
+Projeyi yararlı bulduysan [GitHub'da yıldız vererek](https://github.com/ozandikici/GPTmail) destek olabilirsin. Kurulum deneyimini paylaşman, hata bildirmen ve katkı göndermen de gelişmesine yardımcı olur. Lütfen herkese açık bildirimlere posta içeriği, hesap bilgisi veya parola ekleme.

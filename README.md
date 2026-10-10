@@ -22,6 +22,8 @@ GPTmail brings multiple accounts into one browser workspace. Search and read a s
 
 Brand assets: [transparent logo](static/brand/gptmail-mark.png) · [launch card](static/brand/gptmail-social.png) · [promotion notes](docs/promotion-kit.md).
 
+**Find GPTmail useful? [Star the repository](https://github.com/ozandikici/GPTmail)** to help others discover it. Setup feedback, bug reports and contributions are welcome. Please keep mailbox content, account details and secrets out of public issues.
+
 ## Which inboxes can I connect?
 
 | Account type | Connection | Requirements |
