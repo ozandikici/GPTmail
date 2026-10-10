@@ -9,6 +9,15 @@
   let currentPage = 'inbox';
   let chosen = null;
   let toastTimer;
+  let selectedProvider = null;
+  const providerPresets = {
+    custom: ['', 993, '', 465, 'Posta hizmetinin verdiği IMAP ve SMTP adreslerini kullan.'],
+    icloud: ['imap.mail.me.com', 993, 'smtp.mail.me.com', 587, 'Apple hesabında uygulamaya özel bir parola oluştur. IMAP kullanıcı adı, e-posta adresinin @ öncesindeki kısmı olabilir.'],
+    yahoo: ['imap.mail.yahoo.com', 993, 'smtp.mail.yahoo.com', 465, 'Yahoo hesap güvenliği bölümünde bir uygulama şifresi oluştur.'],
+    zoho: ['imap.zoho.com', 993, 'smtp.zoho.com', 465, 'Zoho sunucuları bölgeye ve hesap türüne göre değişir. Kurumsal hesaplar imappro/smtppro kullanabilir. Hesap ayarlarındaki adresleri doğrula; IMAP planına bağlıdır.'],
+    fastmail: ['imap.fastmail.com', 993, 'smtp.fastmail.com', 465, 'Fastmail uygulama şifresi kullan. Planın IMAP/SMTP erişimini desteklemelidir.'],
+    gmail: ['imap.gmail.com', 993, 'smtp.gmail.com', 465, 'Yalnızca Google hesabın uygulama şifresi oluşturmaya izin veriyorsa kullan. Diğer hesaplar için yukarıdaki Google OAuth bağlantısını seç.']
+  };
 
   const create = (name, className, text) => {
     const el = document.createElement(name);
@@ -29,7 +38,7 @@
       body: payload === undefined ? undefined : JSON.stringify(payload)
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.detail || 'İstek başarısız. (' + response.status + ')');
+    if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : data.detail?.code === 'setup_required' ? 'Sağlayıcı OAuth uygulaması henüz yapılandırılmadı. Kurulum rehberini takip et.' : 'İstek başarısız. (' + response.status + ')');
     return data;
   };
   const action = async (name, data = {}) => (await api('/api/admin/action', { action: name, data })).data;
@@ -49,10 +58,42 @@
   async function refreshState() {
     state = await api('/api/admin/state');
     $('loginView').classList.add('hidden'); $('workspace').classList.remove('hidden');
-    renderAccounts(); renderPermissions(); renderApprovals(); renderConnection(); renderAudit();
+    renderAccounts(); renderProviders(); renderPermissions(); renderApprovals(); renderConnection(); renderAudit();
+    $('accountCount').textContent = `${state.accounts.length} HESAP BAĞLI`;
+    $('onboardingCard').classList.toggle('hidden', state.accounts.length > 0);
     const pending = state.pending?.length || 0;
     $('pendingCount').textContent = pending;
     $('pendingCount').classList.toggle('hidden', pending === 0);
+  }
+
+  function showProvider(provider, account = null) {
+    selectedProvider = provider;
+    $('oauthConnectPanel').classList.remove('hidden');
+    $('oauthProviderTitle').textContent = `${provider.name} ile ${account ? 'yeniden bağlan' : 'bağlan'}`;
+    $('oauthProviderNote').textContent = 'Şifren sağlayıcıda kalır. Erişimi sağlayıcının onay ekranında verirsin; bağlantı anahtarları sunucuda şifreli saklanır.';
+    $('oauthSetup').classList.toggle('hidden', provider.configured);
+    $('oauthConnectForm').classList.toggle('hidden', !provider.configured);
+    $('oauthMissing').textContent = 'Dağıtım ayarlarında eksik: ' + (provider.missing_env || []).join(', ') + '. Anahtarları bu panele veya sohbete yazma; Vercel ortam değişkenlerine ekle.';
+    $('oauthRedirect').textContent = provider.redirect_uri || '';
+    const form = $('oauthConnectForm'); form.reset();
+    form.elements.namedItem('email').value = account?.email || '';
+    form.elements.namedItem('name').value = account?.name || '';
+    $('oauthConnectPanel').scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  function renderProviders() {
+    const cards = clear($('providerCards'));
+    for (const provider of state.providers || []) {
+      const card = create('button', 'provider-card'); card.type = 'button';
+      card.append(create('span', 'provider-symbol', provider.id === 'google' ? 'G' : provider.id === 'microsoft' ? 'M' : '@'),
+        create('span', 'provider-arrow', '↗'), create('h3', '', provider.id === 'imap' ? 'Diğer posta hesapları' : provider.name),
+        create('p', '', provider.id === 'google' ? 'Gmail & Google Workspace' : provider.id === 'microsoft' ? 'Outlook, Hotmail & Microsoft 365' : 'iCloud, Yahoo, Zoho, Fastmail ve özel alan adları'),
+        create('span', 'provider-state', provider.auth_type === 'oauth' ? provider.configured ? 'OAuth · Bağlamaya hazır' : 'OAuth · Uygulama kurulumu gerekli' : 'IMAP / SMTP · Şifre veya uygulama şifresi'));
+      card.addEventListener('click', () => {
+        if (provider.auth_type === 'oauth') showProvider(provider);
+        else { resetAccountForm(); $('oauthConnectPanel').classList.add('hidden'); $('imapPanel').scrollIntoView({behavior:'smooth',block:'start'}); }
+      }); cards.append(card);
+    }
   }
 
   function renderAccounts() {
@@ -68,8 +109,10 @@
     if (!state.accounts.length) { list.textContent = 'Henüz hesap eklenmedi.'; return; }
     for (const a of state.accounts) {
       const box = create('div', 'account-item');
+      box.append(create('span', 'account-provider', a.auth_type === 'oauth' ? `${a.provider === 'google' ? 'Google' : 'Microsoft'} · OAuth` : 'IMAP / SMTP'));
       box.append(create('h4', '', a.name), create('p', '', a.email),
-                 create('p', '', `${a.imap_host}:${a.imap_port} · ${a.smtp_host ? 'SMTP aktif' : 'SMTP kapalı'}`));
+                 create('p', '', `${a.imap_host}:${a.imap_port} · ${a.smtp_status === 'unavailable' ? 'SMTP erişimi doğrulanamadı' : a.smtp_host ? 'SMTP yapılandırıldı' : 'SMTP kapalı'}`));
+      if (a.connection_status === 'reconnect_required') box.append(create('p', 'provider-hint', 'Erişim sona erdi. Hesabı yeniden bağla.'));
       const access = create('label', 'permission-row');
       const toggle = create('input'); toggle.type = 'checkbox'; toggle.checked = a.mcp_enabled !== false;
       access.append(toggle, create('span', '', 'Bu hesaba ChatGPT erişebilsin'));
@@ -81,6 +124,11 @@
       const actions = create('div', 'account-item-actions');
       const edit = create('button', 'secondary', 'Düzenle');
       edit.addEventListener('click', () => {
+        if (a.auth_type === 'oauth') {
+          const provider = state.providers?.find(p => p.id === a.provider);
+          if (provider) showProvider(provider, a);
+          return;
+        }
         const form = $('accountForm');
         for (const field of ['name','email','imap_host','imap_port','username','smtp_host','smtp_port','smtp_username']) {
           form.elements.namedItem(field).value = a[field] ?? '';
@@ -93,11 +141,13 @@
         $('cancelAccountEdit').classList.remove('hidden');
         form.scrollIntoView({behavior:'smooth',block:'start'});
       });
+      if (a.auth_type === 'oauth') edit.textContent = 'Yeniden bağlan';
       actions.append(edit);
       const test = create('button', 'secondary', 'Bağlantıyı test et');
       test.addEventListener('click', () => run(async () => {
         test.disabled = true;
         try { const out = await action('account/test', { account_id: a.id });
+          await refreshState();
           notice(`IMAP: ${out.imap ? 'OK' : 'HATA'} / SMTP: ${out.smtp === null ? 'yapılandırılmadı' : out.smtp ? 'OK' : 'HATA'}`);
         } finally { test.disabled = false; }
       }));
@@ -188,7 +238,7 @@
     clear(list); list.className = '';
     if (!rows.length) { list.className = 'empty'; list.textContent = 'Mesaj bulunamadı.'; return; }
     for (const msg of rows) {
-      const row = create('div', 'mail-row' + (msg.seen ? '' : ' unread')); row.tabIndex = 0;
+      const row = create('button', 'mail-row' + (msg.seen ? '' : ' unread')); row.type = 'button';
       const title = create('div', 'mail-title'); title.append(create('strong', '', msg.from || 'Bilinmeyen gönderici'),
                                                           create('span', '', msg.date?.substring(0, 20) || ''));
       row.append(title, create('p', '', msg.subject || '(konu yok)'));
@@ -198,7 +248,6 @@
         const read = await action('mail/read', { account_id: id, folder, uid: msg.uid });
         renderMessage(read);
       }));
-      row.addEventListener('keydown', e => { if (e.key === 'Enter') row.click(); });
       list.append(row);
     }
   }
@@ -236,15 +285,43 @@
   });
 
   $('logoutBtn').addEventListener('click', () => run(async () => {
-    await api('/api/auth/logout', {}); $('workspace').classList.add('hidden');
-    $('loginView').classList.remove('hidden'); state = null; notice('Oturum kapatıldı.');
+    await api('/api/auth/logout', {});
+    window.location.replace('/');
   }));
+  $('addFirstAccount').addEventListener('click', () => navigate('accounts'));
+  $('closeOAuth').addEventListener('click', () => $('oauthConnectPanel').classList.add('hidden'));
+  $('oauthConnectForm').addEventListener('submit', event => {
+    event.preventDefault(); run(async () => {
+      if (!selectedProvider?.configured) throw new Error('Önce sağlayıcı OAuth uygulamasını yapılandır.');
+      const submit = event.target.querySelector('[type=submit]'); submit.disabled = true;
+      try {
+        const result = await api(`/api/admin/providers/${selectedProvider.id}/connect`, Object.fromEntries(new FormData(event.target).entries()));
+        const url = new URL(result.authorization_url);
+        const expectedHost = selectedProvider.id === 'google' ? 'accounts.google.com' : 'login.microsoftonline.com';
+        if (url.protocol !== 'https:' || url.hostname !== expectedHost) throw new Error('Beklenmeyen yetkilendirme adresi.');
+        window.location.assign(url.href);
+      } finally { submit.disabled = false; }
+    });
+  });
+  $('providerPreset').addEventListener('change', () => {
+    const selected = $('providerPreset').value;
+    resetAccountForm(); $('providerPreset').value = selected;
+    const values = providerPresets[selected]; const form = $('accountForm');
+    ['imap_host','imap_port','smtp_host','smtp_port'].forEach((key, i) => form.elements.namedItem(key).value = values[i]);
+    $('providerHint').textContent = values[4];
+  });
+  $('accountForm').elements.namedItem('email').addEventListener('blur', event => {
+    const form = $('accountForm');
+    if (!form.elements.namedItem('username').value) form.elements.namedItem('username').value = event.target.value;
+    if (!form.elements.namedItem('smtp_username').value) form.elements.namedItem('smtp_username').value = event.target.value;
+  });
   document.querySelectorAll('#nav [data-page]').forEach(node => node.addEventListener('click', () => navigate(node.dataset.page)));
   function resetAccountForm() {
     const form = $('accountForm'); form.reset(); form.elements.namedItem('account_id').value = '';
     form.elements.namedItem('password').required = true;
     form.querySelector('[type=submit]').textContent = 'Bağlantıyı doğrula ve kaydet';
     $('cancelAccountEdit').classList.add('hidden');
+    $('providerPreset').value = 'custom'; $('providerHint').textContent = providerPresets.custom[4];
   }
   $('cancelAccountEdit').addEventListener('click', resetAccountForm);
   $('accountForm').addEventListener('submit', event => {
@@ -298,7 +375,14 @@
     await action('connections/revoke'); await refreshState(); notice('MCP bağlantıları geçersiz kılındı.');
   }));
   run(async () => {
-    try { await refreshState(); navigate(currentPage); if (state.accounts.length) await refreshFolders(); }
+    try { await refreshState();
+      const query = new URLSearchParams(window.location.search);
+      if (query.has('provider_connected') || query.has('provider_error')) {
+        navigate('accounts');
+        notice(query.has('provider_connected') ? 'Posta hesabı OAuth ile bağlandı.' : 'Sağlayıcı bağlantısı tamamlanamadı. İzinleri ve uygulama ayarlarını kontrol edip tekrar dene.', query.has('provider_error'));
+        history.replaceState(null, '', '/');
+      } else navigate(currentPage);
+      if (state.accounts.length) await refreshFolders(); }
     catch (error) { if (String(error.message).includes('401') || error.message.includes('authentication')) return;
       if (error.message === 'Admin authentication required.') return;
       notice(error.message, true);

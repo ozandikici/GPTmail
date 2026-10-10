@@ -115,13 +115,13 @@ def _form(params, client_name):
                                                           'scope', 'resource'})
     # Deliberately do not embed any third-party branding or image URLs.
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; form-action {form_action}; base-uri 'none'">
-    <title>Connect GPTmail</title><style>body{{background:#090f1f;color:#e9efff;font:16px system-ui;display:grid;place-items:center;min-height:90vh}}
-    main{{width:min(420px,90vw);background:#151e32;border:1px solid #2d3a52;border-radius:20px;padding:30px}}
-    input{{width:100%;padding:13px;box-sizing:border-box;border-radius:9px;background:#0d1528;border:1px solid #52617b;color:white}}
-    button{{background:#6ba4ff;border:0;padding:14px 20px;border-radius:10px;font-weight:bold;width:100%;margin-top:20px}}
-    small{{color:#a1abc0;line-height:1.6;display:block}}</style></head><body><main>
-    <h1>GPTmail</h1><h2>Authorize {html.escape(client_name)}</h2>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; form-action {form_action}; base-uri 'none'">
+    <title>Connect GPTmail</title><link rel="icon" href="/static/brand/gptmail-mark.png"><style>*{{box-sizing:border-box}}body{{margin:0;background:#141813;color:#f4f2e9;font:15px system-ui;display:grid;place-items:center;min-height:100vh;padding:24px}}
+    main{{width:min(460px,100%);background:#20281b;border:1px solid #445137;border-radius:16px;padding:32px}}h1{{display:flex;align-items:center;gap:12px;letter-spacing:-1px}}h1 img{{width:48px;height:48px;object-fit:contain}}h2{{font-size:23px;letter-spacing:-.6px}}p{{line-height:1.7;color:#c3ceb6}}
+    input{{width:100%;padding:13px;box-sizing:border-box;border-radius:9px;background:#141813;border:1px solid #6a7b53;color:#f4f2e9}}
+    button{{background:#d5fa68;color:#141813;border:0;padding:14px 20px;border-radius:9px;font-weight:bold;width:100%;margin-top:20px}}input:focus-visible,button:focus-visible{{outline:2px solid #d5fa68;outline-offset:3px}}
+    small{{color:#a9b99a;line-height:1.6;display:block}}</style></head><body><main>
+    <h1><img src="/static/brand/gptmail-mark.png" alt="">GPTmail</h1><h2>Authorize {html.escape(client_name)}</h2>
     <p>This app wants to access your GPTmail MCP connection. Actual mail permissions are controlled in your GPTmail dashboard.</p>
     <form method="post" action="/oauth/authorize">{fields}
     <label>Owner password<br><input type="password" name="password" autocomplete="current-password" required autofocus></label>

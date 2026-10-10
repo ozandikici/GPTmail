@@ -4,8 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>GPTmail · IMAP/SMTP MCP Workspace</title>
-  <meta name="description" content="Open-source secure IMAP, SMTP and ChatGPT MCP bridge.">
+  <meta name="theme-color" content="#141813">
+  <title>GPTmail · Tüm kutuların. Tek özel alanın.</title>
+  <meta name="description" content="Bağımsız, açık kaynak e-posta çalışma alanı. Posta hesaplarını bağla, ChatGPT erişimini sen yönet.">
+  <link rel="icon" type="image/png" href="/static/brand/gptmail-mark.png">
   <link rel="stylesheet" href="/static/app.css">
   <script src="/static/app.js" defer></script>
 </head>
@@ -13,23 +15,24 @@
   <div id="toast" role="status" aria-live="polite"></div>
   <section id="loginView" class="login-stage">
     <div class="login-card">
-      <div class="identity"><div class="mark">G<span>.</span></div><div><b>GPTmail</b><small>Open-source AI Mail Gateway</small></div></div>
-      <div class="eyebrow">PRIVATE WORKSPACE</div>
-      <h1>E-postanın kontrolü sende.</h1>
-      <p>IMAP / SMTP hesaplarını tek bir yerde yönet; ChatGPT'nin hangi işlemleri yapabileceğine sen karar ver.</p>
+      <div class="identity"><img class="mark" src="/static/brand/gptmail-mark.png" alt=""><div><b>GPTmail</b><small>YOUR MAIL. YOUR RULES.</small></div></div>
+      <div class="eyebrow">SANA AİT BİR ÇALIŞMA ALANI</div>
+      <h1>Tüm kutuların.<br>Tek özel alanın.</h1>
+      <p>Posta hesaplarını bir araya getir.<br>ChatGPT erişimini, yetkileri ve onayları sen yönet.</p>
       <form id="loginForm">
         <label for="adminPassword">Yönetici şifresi</label>
         <input id="adminPassword" name="password" type="password" required autocomplete="current-password" placeholder="••••••••••••">
-        <button class="primary wide" type="submit">Yönetim paneline gir <span>→</span></button>
+        <button class="primary wide" type="submit">Çalışma alanını aç <span>↗</span></button>
       </form>
-      <div class="footnote"><span class="status-dot"></span> Şifreler yalnızca senin sunucunda şifrelenerek saklanır.</div>
+      <div class="footnote"><span class="status-dot"></span> Parola korumalı panel · Şifreli kimlik bilgileri</div>
+      <div class="login-footer"><a href="https://github.com/ozandikici/GPTmail" target="_blank" rel="noopener noreferrer">Açık kaynak / GitHub ↗</a><span>Bağımsız bir proje.</span></div>
     </div>
-    <div class="login-aside"><div class="mesh"></div><div class="aside-content"><span class="pill">IMAP · SMTP · MCP</span><h2>Every inbox.<br>One intelligent<br><em>connection.</em></h2><p>Permissions first. Automation on your terms.</p><div class="aside-stat"><span>15</span> MCP araç desteği <span>·</span> OAuth 2.1 + PKCE</div></div></div>
+    <div class="login-aside"><div class="aside-content"><div class="aside-label"><span class="status-dot"></span> BUILT AROUND YOU <span>01 / GPTmail</span></div><div class="brand-scene" aria-hidden="true"><div class="scene-line"></div><div class="provider-pill pill-one">Personal</div><div class="provider-pill pill-two">Work</div><div class="provider-pill pill-three">Your domain</div><div class="hero-mark"><img src="/static/brand/gptmail-mark.png" alt=""></div><div class="scene-caption">CONNECTED. ON YOUR TERMS.</div></div><h2>Less switching.<br><em>More control.</em></h2><p>Every inbox. One private workspace.</p><div class="aside-stat"><span>01</span> Hesaplarını bağla <span>02</span> Yetkileri belirle <span>03</span> Birlikte çalış</div></div></div>
   </section>
 
   <div id="workspace" class="workspace hidden">
     <aside class="sidebar">
-      <div class="identity sidebar-brand"><div class="mark">G<span>.</span></div><div><b>GPTmail</b><small>MAIL / INTELLIGENCE</small></div></div>
+      <div class="identity sidebar-brand"><img class="mark" src="/static/brand/gptmail-mark.png" alt=""><div><b>GPTmail</b><small>PRIVATE WORKSPACE</small></div></div>
       <div class="nav-caption">WORKSPACE</div>
       <nav id="nav">
         <button type="button" data-page="inbox" class="nav-item active"><span class="nav-icon">▣</span> Posta kutusu</button>
@@ -41,17 +44,21 @@
       </nav>
       <div class="sidebar-end"><div class="sidebar-note"><span class="status-dot"></span><span>Self-hosted / Private data</span></div><button id="logoutBtn" class="quiet" type="button">Oturumu kapat ↗</button></div>
     </aside>
-    <main class="main"><header class="topbar"><div><span class="eyebrow">YOUR MAIL. YOUR RULES.</span><h1 id="pageTitle">Posta kutusu</h1></div><div class="topbar-right"><div class="endpoint-chip"><span class="status-dot"></span><span>MCP READY</span></div><div class="avatar">G</div></div></header>
+    <main class="main"><header class="topbar"><div><span class="eyebrow">YOUR MAIL. YOUR RULES.</span><h1 id="pageTitle">Posta kutusu</h1></div><div class="topbar-right"><div class="endpoint-chip"><span class="status-dot"></span><span id="accountCount">0 HESAP BAĞLI</span></div><img class="avatar" src="/static/brand/gptmail-mark.png" alt="GPTmail"></div></header>
       <div class="content">
         <section id="page-inbox" class="page">
+          <div id="onboardingCard" class="onboarding hidden"><span class="onboarding-number">01</span><div><h2>İlk posta kutunla başla.</h2><p>Gmail, Microsoft veya IMAP destekleyen hesabını ekle. Her hesabın ChatGPT erişimini ayrı yönet.</p></div><button id="addFirstAccount" class="primary" type="button">Hesap bağla ↗</button></div>
           <div class="section-header"><div><h2>Mesajlar</h2><p>Okuma işlemi mesajları otomatik olarak okundu işaretlemez.</p></div><button id="composeToggle" class="primary" type="button">+ Yeni e-posta</button></div>
           <div class="panel inbox-controls"><select id="inboxAccount" aria-label="Posta hesabı"><option value="">Hesap seç</option></select><select id="inboxFolder" aria-label="Klasör"><option>INBOX</option></select><input id="searchQuery" placeholder="Mail içeriğinde ara..." aria-label="Mesaj ara"><button id="searchBtn" class="secondary">Ara</button><button id="refreshInbox" class="secondary">Yenile</button></div>
           <div id="composePanel" class="panel form-panel hidden"><div class="form-heading"><h3>Yeni e-posta</h3><button id="closeCompose" class="quiet">Kapat ×</button></div><form id="composeForm"><label>Alıcı (virgülle ayırabilirsin)<input name="to" type="text" required placeholder="example@company.com"></label><label>Konu<input name="subject" maxlength="500" required></label><label>Mesaj<textarea name="body" rows="7" required></textarea></label><button class="primary" type="submit">SMTP ile gönder</button></form></div>
           <div class="inbox-grid"><div class="panel message-list"><div id="messagesList" class="empty">Hesap seçerek mesajlarını listeleyebilirsin.</div></div><div class="panel message-detail"><div id="messageDetail" class="empty">Bir mesaj seçtiğinde burada görüntülenecek.</div></div></div>
         </section>
 
-        <section id="page-accounts" class="page hidden"><div class="section-header"><div><h2>E-posta hesapları</h2><p>IMAPS ve şifreli SMTP ile birden fazla posta kutusu bağlayabilirsin.</p></div><span class="tag">IMAP / SMTP TLS</span></div>
-          <div class="two-col"><div class="panel form-panel"><h3>Yeni hesap ekle</h3><p class="muted">Önce bağlantıyı doğrular, sonra kimlik bilgilerini şifreleyerek kaydederiz.</p>
+        <section id="page-accounts" class="page hidden"><div class="section-header"><div><h2>Farklı hesaplar. Aynı çalışma alanı.</h2><p>Birden fazla sağlayıcı ve posta kutusu ekle. Bağlantı yöntemini aşağıdan seç.</p></div><span class="tag">SANA AİT</span></div>
+          <div id="providerCards" class="provider-grid"></div>
+          <div id="oauthConnectPanel" class="panel form-panel hidden"><div class="form-heading"><h3 id="oauthProviderTitle">OAuth ile bağlan</h3><button id="closeOAuth" class="quiet" type="button">Kapat ×</button></div><p id="oauthProviderNote" class="muted"></p><div id="oauthSetup" class="info-block hidden"><b>Sağlayıcı uygulaması kurulmalı</b><p id="oauthMissing"></p><div class="copyline"><code id="oauthRedirect"></code></div><a href="https://github.com/ozandikici/GPTmail/blob/main/docs/provider-oauth.md" target="_blank" rel="noopener noreferrer">Kurulum rehberini aç ↗</a></div><form id="oauthConnectForm" class="oauth-form"><label>Hesap adı<input name="name" placeholder="Kişisel / İş"></label><label>E-posta adresi<input name="email" type="email" required autocomplete="email" placeholder="you@example.com"></label><button class="primary" type="submit">Sağlayıcıya git ve bağla ↗</button></form></div>
+          <div class="two-col"><div id="imapPanel" class="panel form-panel"><div class="form-heading"><h3>IMAP / SMTP hesabı</h3><span>ŞİFRELİ BAĞLANTI</span></div><p class="muted">Uygulama şifresi veya sunucunun desteklediği posta şifresiyle bağlan. Doğrulamadan kaydetmeyiz.</p>
+            <label class="preset-label">Sağlayıcı ayarları<select id="providerPreset"><option value="custom">Özel alan adı / Diğer IMAP</option><option value="icloud">iCloud Mail</option><option value="yahoo">Yahoo Mail</option><option value="zoho">Zoho Mail</option><option value="fastmail">Fastmail</option><option value="gmail">Gmail · uygulama şifresi</option></select></label><p id="providerHint" class="provider-hint">Posta hizmetinin verdiği IMAP ve SMTP adreslerini kullan.</p>
             <form id="accountForm" class="account-form"><input type="hidden" name="account_id" value="">
               <label>Hesap adı<input name="name" required placeholder="İş e-postası"></label><label>E-posta adresi<input name="email" type="email" required placeholder="you@domain.com"></label>
               <div class="form-heading slim"><h4>IMAP — Gelen posta</h4><span>SSL / TLS</span></div>
@@ -62,7 +69,7 @@
               <label>SMTP kullanıcı adı<input name="smtp_username" placeholder="Boşsa IMAP kullanıcısı"></label><label>SMTP şifresi<input name="smtp_password" type="password" autocomplete="new-password" placeholder="Boşsa IMAP şifresi"></label>
               <button class="primary wide" type="submit">Bağlantıyı doğrula ve kaydet</button><button id="cancelAccountEdit" class="secondary wide hidden" type="button">Düzenlemeyi iptal et</button>
             </form>
-          </div><div><div class="panel form-panel"><h3>Bağlı hesaplar</h3><div id="accountList" class="account-list empty">Henüz hesap eklenmedi.</div></div><div class="info-block"><b>İki faktörlü doğrulama</b><p>Gmail, Outlook veya Titan gibi sağlayıcılarda, gerekiyorsa uygulama şifresi kullan. Hesabının ana şifresini paylaşman gerekmez.</p></div></div></div>
+          </div><div><div class="panel form-panel"><h3>Bağlı hesapların</h3><div id="accountList" class="account-list empty">İlk hesabın burada görünecek.</div></div><div class="info-block"><b>Hangi hesaplar bağlanabilir?</b><p>Gmail ve Microsoft için OAuth; iCloud, Yahoo, Fastmail, Zoho ve özel alan adları için sağlayıcının desteklediği IMAP / SMTP bağlantısı.</p><p>IMAP erişimi, uygulama şifresi veya uygun abonelik gerekebilir. Zoho sunucuları hesap bölgesine göre değişir.</p></div><div class="info-block"><b>Proton Mail ve Tuta</b><p>Her hizmet doğrudan IMAP sunmaz. Proton Mail Bridge yerel bir bilgisayar gerektirir; bu Vercel dağıtımına doğrudan bağlanamaz. Tuta IMAP desteklemez.</p></div></div></div>
         </section>
 
         <section id="page-permissions" class="page hidden"><div class="section-header"><div><h2>ChatGPT ne yapabilsin?</h2><p>Her MCP yetkisini ayrı ayrı açıp kapat. Değişiklikler sunucuda hemen uygulanır.</p></div><span class="tag amber">Varsayılan: salt okunur</span></div>

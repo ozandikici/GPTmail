@@ -19,6 +19,8 @@ from email.parser import BytesHeaderParser
 from email.utils import parseaddr, make_msgid
 from html.parser import HTMLParser
 
+from .providers import ProviderError, xoauth2_payload
+
 MAX_MESSAGE_BYTES = 14 * 1024 * 1024
 MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024
 MAX_MAIL_BODY_CHARS = 25000
@@ -115,7 +117,10 @@ def validate_host(host):
 
 
 def validated_account(data):
+    if data.get('auth_type', 'password') != 'password':
+        raise MailError('Use the Google or Microsoft connection button for OAuth mailboxes.')
     account = {
+        'auth_type': 'password', 'provider': 'imap',
         'name': str(data.get('name', '')).strip(),
         'email': str(data.get('email', '')).strip(),
         'username': str(data.get('username', '')).strip(),
@@ -153,7 +158,18 @@ def imap_connection(account, mailbox=None, readonly=True):
     try:
         client = imaplib.IMAP4_SSL(account['imap_host'], int(account['imap_port']), timeout=15,
                                     ssl_context=ssl.create_default_context())
-        result, _ = client.login(account['username'], account['password'])
+        if account.get('auth_type') == 'oauth':
+            payload = xoauth2_payload(account).encode('utf-8')
+            sent = False
+            def authenticate(challenge):
+                nonlocal sent
+                if sent:
+                    return b''  # OAuth error challenges require an empty response.
+                sent = True
+                return payload
+            result, _ = client.authenticate('XOAUTH2', authenticate)
+        else:
+            result, _ = client.login(account['username'], account['password'])
         if result != 'OK':
             raise MailError('IMAP login failed.')
         if mailbox is not None:
@@ -161,7 +177,11 @@ def imap_connection(account, mailbox=None, readonly=True):
             if result != 'OK':
                 raise MailError('Mailbox could not be selected.')
         yield client
+    except ProviderError as exc:
+        raise MailError(str(exc)) from None
     except (imaplib.IMAP4.error, OSError, ssl.SSLError, TimeoutError) as exc:
+        if account.get('auth_type') == 'oauth':
+            raise MailError('IMAP OAuth authentication failed. Check the mailbox address, provider consent and IMAP policy, then reconnect.') from None
         raise MailError('IMAP connection failed; verify the host, TLS and account/app password.') from exc
     finally:
         if client is not None:
@@ -202,10 +222,23 @@ def smtp_connection(account):
                 raise MailError('SMTP server does not support mandatory STARTTLS.')
             conn.starttls(context=context)
             conn.ehlo()
-        conn.login(account.get('smtp_username') or account['username'],
-                   account.get('smtp_password') or account['password'])
+        if account.get('auth_type') == 'oauth':
+            payload = base64.b64encode(xoauth2_payload(account).encode('utf-8')).decode('ascii')
+            conn.ehlo()
+            code, response = conn.docmd('AUTH', 'XOAUTH2 ' + payload)
+            if code == 334:
+                code, response = conn.docmd('')  # End the error challenge without another token.
+            if code != 235:
+                raise MailError('SMTP OAuth authentication failed. Check consent and whether SMTP AUTH is allowed for this mailbox.')
+        else:
+            conn.login(account.get('smtp_username') or account['username'],
+                       account.get('smtp_password') or account['password'])
         yield conn
+    except ProviderError as exc:
+        raise MailError(str(exc)) from None
     except (smtplib.SMTPException, OSError, ssl.SSLError, TimeoutError) as exc:
+        if account.get('auth_type') == 'oauth':
+            raise MailError('SMTP OAuth connection failed. Check TLS, provider consent and SMTP AUTH policy.') from None
         raise MailError('SMTP connection or authentication failed. Check SMTP settings and TLS.') from exc
     finally:
         if conn:

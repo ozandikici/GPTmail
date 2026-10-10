@@ -14,4 +14,6 @@ GPTmail is self-hosted software that may have access to highly sensitive email a
 
 ## Known non-goals
 
-This starter targets a **single trusted owner**. It is not audited as a multi-tenant SaaS, doesn't implement Gmail/Outlook OAuth provider sign-in, doesn't permanently expunge mail, and doesn't provide antivirus scanning for attachments. The open-source repository may be public, but individual deployments are expected to be private.
+This application targets a **single trusted owner**. It is not audited as a multi-tenant SaaS, doesn't permanently expunge mail, and doesn't provide antivirus scanning for attachments. Gmail/Microsoft provider OAuth requires owner-managed application registrations; provider tokens are encrypted at rest and never returned to the dashboard or MCP client. Provider integration tests use mocked services until an owner configures and authorizes a real mailbox. The open-source repository may be public, but individual deployments are expected to be private.
+
+The dashboard's “revoke MCP connections” action revokes AI-client access, not the provider grant. Remove the mailbox in GPTmail and revoke its application access in Google/Microsoft account settings when you want to end provider authorization.

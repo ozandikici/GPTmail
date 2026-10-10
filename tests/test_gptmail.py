@@ -23,6 +23,25 @@ class MemoryRedis:
         action, *params = args
         action = action.upper()
         k = params[0]
+        if action == 'EVAL':
+            count = int(params[1])
+            keys, values = params[2:2 + count], params[2 + count:]
+            if k.startswith('-- gptmail:oauth_account_cas'):
+                old, new_account, new_tokens, account_id = values
+                current = self.data.get(keys[0])
+                if (not old and current is not None) or (old and current != old): return 0
+                self.data[keys[0]], self.data[keys[1]] = new_account, new_tokens
+                self.data.setdefault(keys[2], set()).add(account_id)
+                return 1
+            if k.startswith('-- gptmail:oauth_token_cas'):
+                if keys[0] not in self.data or self.data.get(keys[1]) != values[0]: return 0
+                self.data[keys[1]] = values[1]
+                return 1
+            if k.startswith('-- gptmail:account_fields_cas'):
+                if self.data.get(keys[0]) != values[0]: return 0
+                self.data[keys[0]] = values[1]
+                return 1
+            raise AssertionError('Unsupported fake Redis script')
         if action == 'GET': return self.data.get(k)
         if action == 'GETDEL': return self.data.pop(k, None)
         if action == 'DEL':
@@ -343,7 +362,7 @@ def test_consent_csp_allows_only_selected_callback_origin(client, redirect_uri, 
     assert response.status_code == 200, response.text
     document = ConsentDocument(response.text)
     assert document.policies == [
-        f"default-src 'none'; style-src 'unsafe-inline'; form-action 'self' {origin}; base-uri 'none'"]
+        f"default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; form-action 'self' {origin}; base-uri 'none'"]
     assert document.form_actions == ['/oauth/authorize']
 
 

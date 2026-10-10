@@ -83,15 +83,23 @@ def accounts_public():
     for account_id in (redis_cmd('SMEMBERS', 'gptmail:account_ids') or []):
         account = get_account(account_id)
         if account:
-            records.append({k: v for k, v in account.items() if k not in ('password', 'smtp_password')})
+            # An allowlist keeps future token/secret fields out of dashboard and MCP responses.
+            public_fields = {'id', 'name', 'email', 'username', 'imap_host', 'imap_port',
+                             'smtp_host', 'smtp_port', 'smtp_username', 'enabled', 'mcp_enabled',
+                             'auth_type', 'provider', 'connection_status', 'smtp_status'}
+            records.append({k: v for k, v in account.items() if k in public_fields})
     return sorted(records, key=lambda a: a.get('name', '').lower())
 
 
-def get_account(account_id):
+def account_record(account_id):
     if not isinstance(account_id, str) or not account_id or len(account_id) > 64:
         raise ValueError('Invalid account ID.')
     blob = redis_cmd('GET', f'gptmail:account:{account_id}')
-    return decrypt_json(blob) if blob else None
+    return blob, decrypt_json(blob) if blob else None
+
+
+def get_account(account_id):
+    return account_record(account_id)[1]
 
 
 def save_account(account):
@@ -104,7 +112,57 @@ def save_account(account):
 
 def remove_account(account_id):
     redis_cmd('DEL', f'gptmail:account:{account_id}')
+    redis_cmd('DEL', f'gptmail:provider_tokens:{account_id}')
     redis_cmd('SREM', 'gptmail:account_ids', account_id)
+
+
+# Compare encrypted records atomically so a refresh cannot restore a removed account
+# or overwrite newer tokens from another Vercel instance.
+OAUTH_ACCOUNT_CAS = '''-- gptmail:oauth_account_cas
+local current = redis.call('GET', KEYS[1])
+if (ARGV[1] == '' and current) or (ARGV[1] ~= '' and current ~= ARGV[1]) then return 0 end
+redis.call('SET', KEYS[1], ARGV[2])
+redis.call('SET', KEYS[2], ARGV[3])
+redis.call('SADD', KEYS[3], ARGV[4])
+return 1'''
+
+OAUTH_TOKEN_CAS = '''-- gptmail:oauth_token_cas
+if redis.call('EXISTS', KEYS[1]) == 0 or redis.call('GET', KEYS[2]) ~= ARGV[1] then return 0 end
+redis.call('SET', KEYS[2], ARGV[2])
+return 1'''
+
+ACCOUNT_FIELDS_CAS = '''-- gptmail:account_fields_cas
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+redis.call('SET', KEYS[1], ARGV[2])
+return 1'''
+
+
+def save_oauth_account(account, tokens, expected_blob=None):
+    account_id = account['id']
+    return bool(redis_cmd('EVAL', OAUTH_ACCOUNT_CAS, 3, f'gptmail:account:{account_id}',
+                         f'gptmail:provider_tokens:{account_id}', 'gptmail:account_ids',
+                         expected_blob or '', encrypt_json(account), encrypt_json(tokens), account_id))
+
+
+def oauth_token_record(account_id):
+    blob = redis_cmd('GET', f'gptmail:provider_tokens:{account_id}')
+    return blob, decrypt_json(blob) if blob else None
+
+
+def replace_oauth_tokens(account_id, expected_blob, tokens):
+    return bool(redis_cmd('EVAL', OAUTH_TOKEN_CAS, 2, f'gptmail:account:{account_id}',
+                         f'gptmail:provider_tokens:{account_id}', expected_blob, encrypt_json(tokens)))
+
+
+def update_account_fields(account_id, changes):
+    for _ in range(3):
+        blob, account = account_record(account_id)
+        if not account:
+            return False
+        account.update(changes)
+        if redis_cmd('EVAL', ACCOUNT_FIELDS_CAS, 1, f'gptmail:account:{account_id}', blob, encrypt_json(account)):
+            return True
+    return False
 
 
 def permissions():

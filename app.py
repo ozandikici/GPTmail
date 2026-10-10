@@ -18,14 +18,16 @@ from gptmail.config import (base_url, resource_url, DEFAULT_PERMISSIONS,
                             PERMISSION_LABELS, ConfigurationError)
 from gptmail.store import (save_account, remove_account, get_account, accounts_public,
                             permissions, save_permissions, recent_audit, audit,
-                            pending_list, pending_consume, pending_reject)
+                            pending_list, pending_consume, pending_reject, update_account_fields)
 from gptmail.oauth import router as oauth_router
 from gptmail.mcp import router as mcp_router
+from gptmail.providers import router as provider_router, provider_status, test_oauth_smtp
 
 ROOT = Path(__file__).resolve().parent
 app = FastAPI(title='GPTmail', docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(oauth_router)
 app.include_router(mcp_router)
+app.include_router(provider_router)
 app.mount('/static', StaticFiles(directory=str(ROOT / 'static')), name='static')
 
 
@@ -95,6 +97,7 @@ def admin_state(request: Request):
         'pending': pending_list(), 'audit': recent_audit(),
         'mcp_url': resource_url(),
         'has_accounts': bool(accounts_public()),
+        'providers': provider_status(),
     }
 
 
@@ -152,6 +155,16 @@ async def admin_action(request: Request):
             result = {'id': account_id, 'saved': True}
         elif action == 'account/update':
             old = _account(data)
+            if old.get('auth_type') == 'oauth':
+                if any(field not in ('account_id', 'name') for field in data):
+                    raise HTTPException(400, 'OAuth mailbox endpoints and identity cannot be edited. Reconnect through the provider instead.')
+                name = data.get('name', old['name'])
+                if not isinstance(name, str) or not 1 <= len(name.strip()) <= 80:
+                    raise HTTPException(400, 'Account name must contain 1-80 characters.')
+                if not update_account_fields(old['id'], {'name': name.strip()}):
+                    raise HTTPException(409, 'Account changed; refresh and try again.')
+                audit('account_updated', account_id=old['id'])
+                return {'ok': True, 'data': {'id': old['id'], 'saved': True}}
             allowed = ('name', 'email', 'username', 'password', 'imap_host', 'imap_port',
                        'smtp_host', 'smtp_port', 'smtp_username', 'smtp_password')
             updated = dict(old)
@@ -182,8 +195,15 @@ async def admin_action(request: Request):
             result = {'removed': True}
         elif action == 'account/test':
             account = _account(data)
-            result = {'imap': mail.test_imap(account),
-                      'smtp': mail.test_smtp(account) if account.get('smtp_host') else None}
+            imap_ok = mail.test_imap(account)
+            if account.get('auth_type') == 'oauth':
+                smtp_ok = test_oauth_smtp(account)
+                update_account_fields(account['id'], {'connection_status': 'connected',
+                    'smtp_status': 'connected' if smtp_ok else 'unavailable', 'smtp_host': account['smtp_host']})
+                result = {'imap': imap_ok, 'smtp': smtp_ok}
+            else:
+                result = {'imap': imap_ok,
+                          'smtp': mail.test_smtp(account) if account.get('smtp_host') else None}
         elif action == 'permissions/update':
             result = save_permissions(data)
         elif action == 'approval/approve':
