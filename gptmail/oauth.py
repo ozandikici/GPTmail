@@ -15,7 +15,7 @@ from urllib.parse import urlencode, parse_qs
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from .auth import (verify_password, validate_redirect, client_ip, rate_limit,
+from .auth import (verify_password, validate_redirect, redirect_origin, client_ip, rate_limit,
                    token_hash, issue_tokens, auth_epoch)
 from .config import base_url, resource_url
 from .store import get_json, set_json, pop_json
@@ -89,7 +89,8 @@ def _validate_auth_query(data):
     challenge = data.get('code_challenge', '')
     method = data.get('code_challenge_method', '')
     resource = data.get('resource', resource_url())
-    if (redirect_uri not in client['redirect_uris'] or data.get('response_type') != 'code'
+    if (redirect_uri not in client['redirect_uris'] or not validate_redirect(redirect_uri)
+            or data.get('response_type') != 'code'
             or not isinstance(challenge, str) or not re.fullmatch(r'[A-Za-z0-9_-]{43}', challenge)
             or method != 'S256' or resource not in (base_url(), resource_url())
             or data.get('scope', 'mail') not in ('', 'mail')):
@@ -101,13 +102,20 @@ def _validate_auth_query(data):
 
 
 def _form(params, client_name):
+    # Chromium applies form-action to the 303 callback after the same-origin POST.
+    # Only allow this registered callback's validated origin; path/query text must
+    # never be interpolated into CSP. The form itself still posts only to us.
+    callback_origin = redirect_origin(params.get('redirect_uri'))
+    if callback_origin is None:
+        raise HTTPException(400, 'Invalid OAuth redirect URI.')
+    form_action = html.escape("'self' " + callback_origin, quote=True)
     fields = ''.join(f'<input type="hidden" name="{html.escape(k, quote=True)}" value="{html.escape(str(v), quote=True)}">'
                      for k, v in params.items() if k in {'client_id', 'redirect_uri', 'response_type',
                                                           'state', 'code_challenge', 'code_challenge_method',
                                                           'scope', 'resource'})
     # Deliberately do not embed any third-party branding or image URLs.
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; form-action {form_action}; base-uri 'none'">
     <title>Connect GPTmail</title><style>body{{background:#090f1f;color:#e9efff;font:16px system-ui;display:grid;place-items:center;min-height:90vh}}
     main{{width:min(420px,90vw);background:#151e32;border:1px solid #2d3a52;border-radius:20px;padding:30px}}
     input{{width:100%;padding:13px;box-sizing:border-box;border-radius:9px;background:#0d1528;border:1px solid #52617b;color:white}}

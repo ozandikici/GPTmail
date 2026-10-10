@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+from html.parser import HTMLParser
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -116,6 +117,8 @@ def test_oauth_pkce_flow_and_mcp(client):
     consent = client.post('/oauth/authorize', data={**auth_args,
         'password': 'test-password-strong-123', 'approve': 'yes'}, follow_redirects=False)
     assert consent.status_code == 303
+    assert consent.headers['location'].startswith(redirect_uri + '?')
+    assert 'test-password-strong-123' not in consent.headers['location']
     redirect = parse_qs(urlparse(consent.headers['location']).query)
     assert redirect['state'] == ['state-123']
     assert redirect['iss'] == ['http://localhost:8000']
@@ -300,3 +303,77 @@ def test_delete_requires_permission_and_owner_approval(client, monkeypatch, mova
     assert answer.status_code == 200, answer.text
     assert len(deleted) == 1 and deleted[0][1:] == ('42', 'INBOX')
     assert store.pending_list() == []
+
+
+class ConsentDocument(HTMLParser):
+    def __init__(self, document):
+        super().__init__()
+        self.policies = []
+        self.form_actions = []
+        self.feed(document)
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'meta' and attrs.get('http-equiv', '').lower() == 'content-security-policy':
+            self.policies.append(attrs['content'])
+        if tag == 'form':
+            self.form_actions.append(attrs.get('action'))
+
+
+def consent_args(client, redirect_uri, extra_redirects=()):
+    registration = client.post('/oauth/register', json={'client_name': 'Test client',
+        'redirect_uris': [redirect_uri, *extra_redirects], 'token_endpoint_auth_method': 'none'})
+    assert registration.status_code == 201, registration.text
+    return {'client_id': registration.json()['client_id'], 'redirect_uri': redirect_uri,
+            'response_type': 'code', 'state': 'state-123', 'code_challenge': 'a' * 43,
+            'code_challenge_method': 'S256', 'resource': 'http://localhost:8000/mcp', 'scope': 'mail'}
+
+
+@pytest.mark.parametrize('redirect_uri,origin', [
+    ('https://chatgpt.com/connector_platform_oauth_redirect', 'https://chatgpt.com'),
+    ('https://client.example:8443/callback', 'https://client.example:8443'),
+    ('http://127.0.0.1:4321/callback', 'http://127.0.0.1:4321'),
+    ('https://client.example/callback;form-action=*?payload=";script-src=*;x=<img>',
+     'https://client.example'),
+    ('https://client.example/callback?payload=%22%3B%20form-action%20*', 'https://client.example'),
+])
+def test_consent_csp_allows_only_selected_callback_origin(client, redirect_uri, origin):
+    args = consent_args(client, redirect_uri, ['https://other.example/callback'])
+    response = client.get('/oauth/authorize', params=args)
+    assert response.status_code == 200, response.text
+    document = ConsentDocument(response.text)
+    assert document.policies == [
+        f"default-src 'none'; style-src 'unsafe-inline'; form-action 'self' {origin}; base-uri 'none'"]
+    assert document.form_actions == ['/oauth/authorize']
+
+
+@pytest.mark.parametrize('redirect_uri', [
+    'https://client.example;script-src=*/callback',
+    'https://*.client.example/callback',
+    'https://client.example:*/callback',
+    'https://client.example:443;script-src=*/callback',
+    'https://client.example:99999/callback',
+    'https://client.example\t.evil.example/callback',
+    'https://client.example\\@evil.example/callback',
+    'https://@client.example/callback',
+    'https://client.example/callback\n',
+])
+def test_registration_rejects_unsafe_callback_origins(client, redirect_uri):
+    response = client.post('/oauth/register', json={'redirect_uris': [redirect_uri]})
+    assert response.status_code == 400
+
+
+def test_unregistered_callback_cannot_expand_consent_policy(client):
+    args = consent_args(client, 'https://chatgpt.com/connector_platform_oauth_redirect')
+    args['redirect_uri'] = 'https://unregistered.example/callback'
+    response = client.get('/oauth/authorize', params=args)
+    assert response.status_code == 400
+    assert not ConsentDocument(response.text).policies
+    assert client.post('/oauth/authorize', data={**args,
+        'password': 'test-password-strong-123', 'approve': 'yes'}, follow_redirects=False).status_code == 400
+
+
+def test_production_registration_rejects_http_callback(client, monkeypatch):
+    monkeypatch.setenv('VERCEL', '1')
+    response = client.post('/oauth/register', json={'redirect_uris': ['http://localhost:4321/callback']})
+    assert response.status_code == 400

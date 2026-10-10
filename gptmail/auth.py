@@ -5,7 +5,9 @@ import base64
 import hashlib
 import hmac
 import os
+import re
 import secrets
+from ipaddress import IPv6Address
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
@@ -121,13 +123,30 @@ def verify_bearer(request: Request):
     return details
 
 
-def validate_redirect(uri):
-    if not isinstance(uri, str) or len(uri) > 1500 or '\n' in uri or '\r' in uri:
-        return False
+def redirect_origin(uri):
+    """Return a validated origin safe for a CSP source, never a URI path/query."""
+    if not isinstance(uri, str) or len(uri) > 1500 or re.search(r'[\x00-\x20\x7f\\]', uri):
+        return None
     try:
         parsed = urlsplit(uri)
-        return (not parsed.fragment and not parsed.username and not parsed.password
-                and ((parsed.scheme == 'https' and bool(parsed.hostname)) or
-                     (not os.getenv('VERCEL') and parsed.scheme == 'http' and parsed.hostname in ('localhost', '127.0.0.1'))))
-    except ValueError:
-        return False
+        if (parsed.fragment or parsed.username is not None or parsed.password is not None
+                or not parsed.hostname or not (parsed.scheme == 'https' or
+                    (not os.getenv('VERCEL') and parsed.scheme == 'http'
+                     and parsed.hostname in ('localhost', '127.0.0.1')))):
+            return None
+        host = parsed.hostname.encode('idna').decode('ascii')
+        if ':' in host:
+            if '%' in host:
+                return None
+            host = '[' + str(IPv6Address(host)) + ']'
+        elif not re.fullmatch(r'[A-Za-z0-9.-]+', host):
+            return None
+        # Parsing the port rejects wildcard, nonnumeric, and out-of-range values.
+        port = parsed.port
+        return f'{parsed.scheme}://{host}' + (f':{port}' if port is not None else '')
+    except (ValueError, UnicodeError):
+        return None
+
+
+def validate_redirect(uri):
+    return redirect_origin(uri) is not None
