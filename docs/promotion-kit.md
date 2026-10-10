@@ -1,6 +1,6 @@
 # GPTmail — tanıtım paketi / promotion kit
 
-Hazırlanma ve kaynak kontrol tarihi: **10 Ekim 2026**. Bu dosya bir hazırlık paketidir; topluluklara gönderim yapılmamıştır. Metinleri yalnızca kullanılacak platformun kuralları izin veriyorsa kullan.
+Hazırlanma ve kaynak kontrol tarihi: **10 Ekim 2026**. Bu paket, GitHub kaynak kodunu gerçek açık kaynak ve geliştirici forumlarında tanıtmak için hazırlanmıştır. MCP katalog ve dizinlerine başvuru bu planın dışındadır. Yayın durumu ayrıca doğrulanan paylaşım bağlantılarıyla raporlanır; burada bir taslağın bulunması yayımlandığı anlamına gelmez.
 
 **Ana bağlantı:** [github.com/ozandikici/GPTmail](https://github.com/ozandikici/GPTmail)
 
@@ -68,38 +68,41 @@ Konuyla ilgili topics, projenin GitHub'da keşfedilmesine yardımcı olur; alaka
 
 Bu iki taslak genel kullanım içindir. **Hacker News veya r/opensource'a kopyalama:** aşağıdaki güncel kuralları uygulayarak kendi metnini yaz.
 
-## Dizin katkısı için hazır taslak
+## Seçilen forum: r/github proje paylaşım başlığı
 
-**Aday:** [punkpeye/awesome-mcp-servers](https://github.com/punkpeye/awesome-mcp-servers). Projenin herkese açık kaynak deposu ve kendi kurulum yolu, listenin kapsamıyla örtüşüyor; kabul kararı liste bakımcılarına ait. Liste kısa açıklama, uygun kategori, alfabetik sıra ve mevcut satır biçimini istiyor. [Katkı kuralları](https://github.com/punkpeye/awesome-mcp-servers/blob/main/CONTRIBUTING.md).
+[Promote your projects here — Self-Promotion Megathread](https://www.reddit.com/r/github/comments/1jy8rea/promote_your_projects_here_selfpromotion/), 10 Ekim 2026 kontrolünde sabitlenmiş, kilitsiz ve yorumlara açıktır. Başlık kısa proje açıklaması ve GitHub repo bağlantısı ister; teknik yapı ve katılım bağlamı da eklenebilir. Tanıtım için bu başlığa tek İngilizce yorum yazılır; ayrı gönderi açılmaz.
 
-**Açıklama:**
+[Güncel topluluk kuralları](https://www.reddit.com/r/github/about/rules.json) düşük çabalı, yalnızca bağlantı içeren içerikleri ve spam'i yasaklar; görünür kurallarda AI içeriğine özel bir yasak yoktur. [Reddit'in AI içerik politikası](https://support.reddithelp.com/hc/en-us/articles/41180423371156-Manipulated-Content-and-Misleading-Behavior) AI kullanımının açıklanmasını ister. Paylaşım öncesinde başlığın güncel durumunu, hesabın yorum yetkisini ve aynı proje için mevcut yorum olup olmadığını kontrol et. Moderasyon kabulü veya görünürlük garantisi yoktur.
 
-> OAuth-protected email MCP server with a private multi-account dashboard, configurable tool permissions, and approval queues for sending and Trash actions.
+**İngilizce yorum taslağı:**
 
-**Bağlantılı satır taslağı:**
+> I maintain GPTmail, an MIT-licensed Python project for managing multiple email accounts through a private dashboard and MCP.
+>
+> It supports compatible IMAP/SMTP accounts, per-tool permissions, and approval queues for sending messages and moving them to Trash. Google and Microsoft OAuth integrations require your own provider app registrations. This is an early release; live provider mailbox testing is still incomplete.
+>
+> Source, screenshots, and setup instructions: https://github.com/ozandikici/GPTmail
+>
+> You deploy your own instance and keep mailbox credentials in your deployment. Feedback on setup documentation and provider compatibility would help improve the project.
+>
+> Disclosure: AI tools helped develop the project and draft this comment.
 
-```markdown
-- [ozandikici/GPTmail](https://github.com/ozandikici/GPTmail) - OAuth-protected email MCP server with a private multi-account dashboard, configurable tool permissions, and approval queues for sending and Trash actions.
-```
+**İsteğe bağlı GitHub star çağrısı:**
 
-**PR açıklaması taslağı:**
+> If the project is useful to you, a GitHub star is welcome.
 
-> Adds GPTmail, an MIT-licensed Python email MCP server with source-based installation instructions. It supports compatible IMAP/SMTP mailboxes and configurable Google/Microsoft OAuth. The dashboard is single-owner and password protected; each MCP capability has a separate permission, with send/Trash approval queues available. The repository documents provider setup and current testing limits. I maintain the project.
-
-Gönderim sırasında listenin güncel kategorisini ve zorunlu simgelerini kontrol ederek satırı uyarlamak gerekir. Bu paket bir PR açmaz.
+Bu cümle yalnızca GitHub deposuna yöneliktir; Reddit oyu, karşılıklı star veya ödül karşılığı etkileşim istenmez. Paylaşımdaki tek ürün bağlantısı kaynak deposudur; özel panel ya da çalışan sunucu adresi eklenmez.
 
 ## Kanal seçimi ve yayın koşulları
 
 | Kanal | Uygun yol | Şu anki karar |
 |---|---|---|
 | Kendi GitHub deposu | README, About, topics, lisans, kurulum rehberi | Ana tanıtım adresi; kaynak ve kurulum odaklı |
-| Awesome MCP Servers | Kurallara uygun tek proje katkısı | Yukarıdaki taslak hazır; gönderilmedi |
+| r/github | Sabitlenmiş **Self-Promotion Megathread** içinde kısa açıklama, kaynak bağlantısı ve AI açıklaması | Seçilen kanal; yukarıdaki İngilizce yorum taslağı kullanılır |
 | r/selfhosted | Proje üç aydan gençken yalnızca güncel **New Project Megathread**; İngilizce, açık teknik bağlam | Bağımsız tanıtım gönderisi hazırlama; önce gerçek kurulum deneyimi ve test kanıtı |
 | r/opensource | OSI lisanslı repo, uygun **Promotional** etiketi, tartışmaya katılım; yapay zekâ üretimi içerik yasak | Hazır metni kullanma; kullanıcı kendi deneyimini kendi cümleleriyle yazmalı |
 | Show HN | İnsanların deneyebileceği bir proje, kişisel teknik açıklama; insan tarafından yazılmış gönderi | Aşağıdaki notlardan bağımsız kişisel metin hazırlanmalı; otomatik gönderim yok |
-| Awesome Selfhosted | İlk etiketli sürümün üzerinden dört aydan fazla zaman geçmeli; belirli bir bulut sağlayıcısına bağımlı yazılım kapsam dışı | Şimdilik uygun değil: Upstash'a özgü REST bağımlılığı, yeni sürüm ve LLM katkı yasağı |
 
-Kurallar için: [r/selfhosted](https://www.reddit.com/r/selfhosted/wiki/rules/), [r/opensource](https://www.reddit.com/r/opensource/), [Show HN](https://news.ycombinator.com/showhn.html), [HN genel kuralları](https://news.ycombinator.com/newsguidelines.html), [Awesome Selfhosted katkı şartları](https://github.com/awesome-selfhosted/awesome-selfhosted-data/blob/master/CONTRIBUTING.md). Bunlar 10 Ekim 2026 kontrolüdür; paylaşım günü tekrar kontrol et.
+Kurallar için: [r/github](https://www.reddit.com/r/github/about/rules.json), [r/selfhosted](https://www.reddit.com/r/selfhosted/wiki/rules/), [r/opensource](https://www.reddit.com/r/opensource/), [Show HN](https://news.ycombinator.com/showhn.html), [HN genel kuralları](https://news.ycombinator.com/newsguidelines.html). Bunlar 10 Ekim 2026 kontrolüdür; paylaşım günü tekrar kontrol et.
 
 Reddit, tekrar eden toplu tanıtımları ve istenmeyen kitlesel etkileşimi spam olarak değerlendirir. Aynı metni çok sayıda topluluğa dağıtma, otomatik DM gönderme veya oy isteme. [Reddit spam politikası](https://support.reddithelp.com/hc/en-us/articles/360043504051-Spam).
 
@@ -124,4 +127,4 @@ Kullanılabilecek görseller: yeni logo, boş hesap durumunu gösteren panel gö
 
 **Söylenmemeli:** “Her sağlayıcı hazır bağlı”, “tamamen çevrimdışı”, “e-postalar hiçbir yere gitmez”, “bağımsız güvenlik denetiminden geçti”, “sınırsız ücretsiz”, “resmî ChatGPT/Gmail/Microsoft ürünü”, “herkese açık canlı demo”.
 
-Ücretsiz planlarla kurulum, sağlayıcıların güncel kota ve kullanım koşullarına bağlıdır. Tanıtımın çağrısı **kaynak kodu incele, kendi ortamında kur, somut geri bildirim ver** olmalıdır.
+Ücretsiz planlarla kurulum, sağlayıcıların güncel kota ve kullanım koşullarına bağlıdır. Tanıtımın çağrısı **kaynak kodu incele, kendi ortamında kur, somut geri bildirim ver** olmalıdır. Platformun kuralları uygunsa **yararlı bulursan GitHub'da star ver** çağrısı eklenebilir; star sayısı veya büyüme garantisi verilmez.
